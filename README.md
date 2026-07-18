@@ -20,8 +20,8 @@ There are two key flows in a payment system:
 3. For external payment service provider(PSP), Stripe will be used as it has the best and most comprehensive free API and sandbox ecosystem.
 
 ## Pay-in flow
- 
-                    Payment Event
+ ```
+                      Payment Event
                             |
                     Fraud check service(Simple deterministic mocking)
                             |               
@@ -33,7 +33,7 @@ There are two key flows in a payment system:
                        |                |           |
                        DB               DB          DB
 
-
+```
                 
 
 Why PostgreSQL over MySQL for database? 
