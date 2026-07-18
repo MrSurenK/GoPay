@@ -11,8 +11,8 @@ An interactive payment system visualiser.(This is largely based on my learnings 
 ## System Design:
 
 There are two key flows in a payment system: 
-    1. Pay in 
-    2. Pay out (Will auto payout at a given interval to demonstrate the exchange of money)
+1. Pay in 
+2. Pay out (Will auto payout at a given interval to demonstrate the exchange of money)
 
 ### Constraints/Reasoning of design
 1. The focus will mainly on the pay in system with a simple pay out system to demonstrate the transactions taking place in this demo.
