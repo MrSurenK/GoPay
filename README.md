@@ -38,7 +38,6 @@ There are two key flows in a payment system:
 
 ```
 > Note: Payement Service is the "brain" of this architecture and it will update the DB as the payment flows throught the different services even after the PSP has successfully processed the payment and the events are sent to kafka
-                
 
 Why PostgreSQL over MySQL for database? 
 
@@ -51,5 +50,23 @@ Why PostgreSQL over MySQL for database?
 | Mathematical Precision | Native NUMERIC handle exact decimals flawlessly | DECIMAL works well but math functions can round up | Gurantees zero penny-dropping or rounding errors | 
 | Extensibility | Supports custom types, ranges and advanced triggers | Limited extension ecosystem | Allows for powerful, automated internal auditing | 
 
+### Resilience Measures
 
- 
+1. What if PSP failed the transaction? 
+
+2. What if any individual service is down after PSP is successful? (Ledger service, Wallet Service or Email Service) 
+
+3. What if Payment service itself is down? - The brain of the architecture
+
+4. What if KAFKA is down? 
+
+5. What if PSP is down? 
+
+6. What if Smart Routing Service is down? 
+
+7. What if the entire DB itslef is down? -> A scalable solution will be discussed here but application will not implement a full DB recovery plan. Instead a persistent volume in docker will be used to save data and simulate a DB down
+
+
+## Idempotency - How do we ensure that transactions are not accidentally duplicated through the system? 
+
+
