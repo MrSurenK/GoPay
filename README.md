@@ -26,7 +26,7 @@ There are two key flows in a payment system:
                     Fraud check service(Simple deterministic mocking)
                             |               
  Database record <- Payment Service -> Payment Order -> Smart Routing Service -> Payment Executor -> PSP (to handle actual movement of monies between banks and card schemes)
- of payment order          ||                                                           |                                       |
+ of payment order          ||                                                           |                                        |
        Inventory Service <-||                                                    Update DB of Payment Event                   (success? yes)   
                |            |                                                                                                    |
 Reserve inventory in        |                                                                                                    |   
@@ -55,30 +55,30 @@ Why PostgreSQL over MySQL for database?
 
 ### Resilience Measures
 
-> Health checks for all services will be done by docker deamon itself and self healing property `restart always` will run when it detects that a service is down
+__Health checks for all services will be done by docker deamon itself and self healing property `restart always` will run when it detects that a service is down__
 
 1. What if PSP failed the transaction?
-If the transaction failed at the PSP service the API would return a failure. Since monies has not moved out we can then just update the DB as Failed transaction and pass the same response back to the user in the UI with a "pls try again" later message for instance. Since our DB will be the single source of truth, a payment marked as failed will not be picked up and processed again.  
+> If the transaction failed at the PSP service the API would return a failure. Since monies has not moved out we can then just update the DB as Failed transaction and pass the same response back to the user in the UI with a "pls try again" later message for instance. Since our DB will be the single source of truth, a payment marked as failed will not be picked up and processed again.  
 
 2. What if any individual service is down after PSP is successful? (Ledger service, Wallet Service or Email Service)
-Now in this situation, money has already moved and thus is it of utmost importance that the system reliably reflects this. In the event of a failure, the service will be offline or take too long to send a response to KAFKA, KAFKA will then add this particular transaction using a unique identifier such as id to a dead letter queue to be processed at a later time. The DB once again here will reflect accurately which service has yet to be completed successfully for each transaction and when the service is online again, it will read the queue and pick up from where it left off to process it. Since KAFKA manages all the various services independently, a single service going down will not have an effect on the others. Furthermore money has already moved and such all business logic following that must be reflected in the services that follow. 
+> Now in this situation, money has already moved and thus is it of utmost importance that the system reliably reflects this. In the event of a failure, the service will be offline or take too long to send a response to KAFKA, KAFKA will then add this particular transaction using a unique identifier such as id to a dead letter queue to be processed at a later time. The DB once again here will reflect accurately which service has yet to be completed successfully for each transaction and when the service is online again, it will read the queue and pick up from where it left off to process it. Since KAFKA manages all the various services independently, a single service going down will not have an effect on the others. Furthermore money has already moved and such all business logic following that must be reflected in the services that follow. 
 
-So what if email is sent but inventory or other services have not yet been updated? User/Customer does not need to know or wait for services to be up and running but need to reliably know that they would receive what they have paid for. As such the system must be designed to reserve inventory before the payment goes through the PSP and only release it if PSP returns a failed transaction. If PSP is sucessful here then the fufilment service will make the inventory deduction permanent. For simplicity ssake that is all the fufilment service here will do but in a real production system it should also handle other details relating to shipping/delivery to customer. 
+> So what if email is sent but inventory or other services have not yet been updated? User/Customer does not need to know or wait for services to be up and running but need to reliably know that they would receive what they have paid for. As such the system must be designed to reserve inventory before the payment goes through the PSP and only release it if PSP returns a failed transaction. If PSP is sucessful here then the fufilment service will make the inventory deduction permanent. For simplicity ssake that is all the fufilment service here will do but in a real production system it should also handle other details relating to shipping/delivery to customer. 
 
 3. What if Payment service itself is down? - The brain of the architecture
-If payment services itself is down, no transaction has been processed or gone thorugh. In which case, the front end can just throw an error to the user and request to try again anther time to gracefully handle it on the front end. From system perspective, a health check daemon will be able to detect that the service is down and spin it back up again, at which time it can begin taking in new orders and orchestrating the flow again. 
+> If payment services itself is down, no transaction has been processed or gone thorugh. In which case, the front end can just throw an error to the user and request to try again anther time to gracefully handle it on the front end. From system perspective, a health check daemon will be able to detect that the service is down and spin it back up again, at which time it can begin taking in new orders and orchestrating the flow again. 
 
 4. What if KAFKA is down? 
-Again here we rely on our DB to be our single source of truth. If KAFKA is down when it comes back up it will scan the DB and pick up the transactions that are still pending and continue from where it left off.
+> Again here we rely on our DB to be our single source of truth. If KAFKA is down when it comes back up it will scan the DB and pick up the transactions that are still pending and continue from where it left off.
 
 5. What if PSP is down?
-Money has not moved yet so we can simply handle it gracefully in the UI and allow the user to try again at a later time. We do not want to allow it similar to if KAFKA is down as it will be very bad for user experience. User or Customers will not be willing to wait long for a service to get back up and then get updated. Its better to have them just try again at a later time. 
+> Money has not moved yet so we can simply handle it gracefully in the UI and allow the user to try again at a later time. We do not want to allow it similar to if KAFKA is down as it will be very bad for user experience. User or Customers will not be willing to wait long for a service to get back up and then get updated. Its better to have them just try again at a later time. 
 
 6. What if Smart Routing Service is down?
-A _Static Circuit Breaking Fallback_ will be implemented. A default PSP will be hardcoded and if the service is down the payment executor will simply forward the payment details to the default PSP. 
+> A _Static Circuit Breaking Fallback_ will be implemented. A default PSP will be hardcoded and if the service is down the payment executor will simply forward the payment details to the default PSP. 
 
 7. What if the entire DB itslef is down? -> A scalable solution will be discussed here but application will not implement a full DB recovery plan. Instead a persistent volume in docker will be used to save data and simulate a DB down
-In a production environment a synchronous Primary-Replica Cluster will be implemented in different AZs say using Aurora. If the DB was truly down, the Replica cluster that is read only can be promoted to be a primary cluster to maintain data integrity and system resilience. Since the Primary-Replica cluster is synchronous, every time data is updated in the primary cluster the replica cluster will also be updated accordingly. 
+> In a production environment a synchronous Primary-Replica Cluster will be implemented in different AZs say using Aurora. If the DB was truly down, the Replica cluster that is read only can be promoted to be a primary cluster to maintain data integrity and system resilience. Since the Primary-Replica cluster is synchronous, every time data is updated in the primary cluster the replica cluster will also be updated accordingly. 
 
 ## Idempotency - How do we ensure that transactions are not accidentally duplicated through the system? 
 
