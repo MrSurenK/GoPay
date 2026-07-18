@@ -26,7 +26,7 @@ There are two key flows in a payment system:
                     Fraud check service(Simple deterministic mocking)
                             |               
  Database record <- Payment Service -> Payment Order -> Smart Routing Service -> Payment Executor -> PSP (to handle actual movement of monies between banks and card schemes)
- of payment order           |                                                           |
+ of payment order           |                                                           |                                       |
                                                                                 Update DB of Payment Event                   (success? yes)   
                                                                                                                                 |
                                                                                                                                 |
