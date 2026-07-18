@@ -25,15 +25,19 @@ There are two key flows in a payment system:
                             |
                     Fraud check service(Simple deterministic mocking)
                             |               
- Database record <- Payment Service -> Payment Order -> Payment Executor -> Smart Routing Service -> PSP (to handle actual movement of monies between banks and card schemes)
- of payment order           |                                      |
-                                                      Database record of payment event
+ Database record <- Payment Service -> Payment Order -> Smart Routing Service -> Payment Executor -> PSP (to handle actual movement of monies between banks and card schemes)
+ of payment order           |                                                           |
+                                                                                Update DB of Payment Event                   (success? yes)   
+                                                                                                                                |
+                                                                                                                                |
+                          KAFKA ------------------------------------------------------------------------------------------------
                         /        \                \           
                 Ledger Service   Wallet Service   Email Service
                        |                |           |
                        DB               DB          DB
 
 ```
+> Note: Payement Service is the "brain" of this architecture and it will update the DB as the payment flows throught the different services even after the PSP has successfully processed the payment and the events are sent to kafka
                 
 
 Why PostgreSQL over MySQL for database? 
