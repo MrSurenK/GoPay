@@ -40,7 +40,7 @@ db until successful in PSP  |                                                   
             DB               DB             DB      Update Inventory DB to permanently deduct stock 
 
 ```
-> Note: Payement Service is the "brain" of this architecture and it will update the DB as the payment flows throught the different services even after the PSP has successfully processed the payment and the events are sent to kafka
+> Note: Payement Service is the "brain" of this architecture and once it processes a payment synchornously and saved its details to the DB, it will then go on to send the payment into Kafka partition to gurantee the order and flow (eg. Fraud Check -> Payment Order -> Smart Routing Service) up till it reaches the PSP. This helps incase there is a overwhelming amount of transactions coming in that might overload a synchronus process. Post processing by PSP, the transaction will then go to Kafka again to engage all the other services and complete the processing logic.
 
 Why PostgreSQL over MySQL for database? 
 
